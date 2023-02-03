@@ -6,6 +6,8 @@ set -Eeo pipefail
 
 # Get script dir
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd -P)
+# Check os
+OS_TYPE=$(hostnamectl | grep -F "Operating System:")
 
 # Port for endlessh to target
 PORT="22"
@@ -16,10 +18,43 @@ CONFIG_DIR="/etc/endlessh"
 CONFIG_FILE="$CONFIG_DIR/config"
 # Where to download and build endlessh files for installation
 BUILD_DIR="$HOME/Documents/endlessh"
-
 # Links
 ENDLESS_GIT="https://github.com/skeeto/endlessh.git"
 ENDLESS_ZIP="https://github.com/skeeto/endlessh/archive/refs/heads/master.zip"
+
+# Check for an existing endlessh instance
+if [ -x "$BINARY_DIR/endlessh" ] || command -v endlessh &> /dev/null; then
+  echo "Error, endlessh has already been installed to: $(which endlessh)"
+  exit 1
+fi
+
+# Ensure make exists
+if ! command -v make &> /dev/null; then
+  if (echo "$OS_TYPE" | grep -qF "Fedora"); then
+    sudo dnf install -y build-essential unzip
+  elif (echo "$OS_TYPE" | grep -qF "Debian"); then
+    sudo apt update
+    sudo apt install -y build-essential unzip
+  else
+    echo "Error, 'make' is required, please install this package to correct this:
+  build-essential"
+    exit 1
+  fi
+fi
+
+# Check for git or unzip
+if ! command -v git &> /dev/null && ! command -v unzip &> /dev/null; then
+  if (echo "$OS_TYPE" | grep -qF "Fedora"); then
+    sudo dnf install -y unzip
+  elif (echo "$OS_TYPE" | grep -qF "Debian"); then
+    sudo apt update
+    sudo apt install -y unzip
+  else
+    echo "Error, 'unzip' is required, please install this package to correct this:
+  unzip"
+    exit 1
+  fi
+fi
 
 # Clear out old downloaded files
 rm -rf "$BUILD_DIR"
@@ -41,7 +76,6 @@ fi
 
 # Build binary and install it
 if ! command -v make &> /dev/null; then
-  echo "Error, 'make' is required, please install 'build-essential' to correct this."
   exit 1
 fi
 cd "$BUILD_DIR" || exit 1
@@ -71,6 +105,7 @@ sleep 3
 echo
 systemctl status endlessh.service
 echo "
-Complete, endlessh has been installed at $(which endlessh) and enabled on port: $PORT
+--------------------------------------------------------------------------------
+Finished, endlessh has been installed to $(which endlessh) and enabled for port: $PORT
 Version:"
 endlessh -V
