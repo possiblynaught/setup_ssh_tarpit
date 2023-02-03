@@ -31,7 +31,7 @@ if command -v git &> /dev/null; then
 elif command -v unzip &> /dev/null; then
   # Download and unzip
   wget "$ENDLESS_ZIP" -O /tmp/endless.zip
-  uzip /tmp/endless.zip
+  unzip /tmp/endless.zip
   rm -f /tmp/endless.zip
   mv /tmp/endlessh-master "$BUILD_DIR"
 else
@@ -68,8 +68,9 @@ sudo systemctl start endlessh
 sleep 3
 
 # Notify complete
+echo
+systemctl status endlessh.service
 echo "
 Complete, endlessh has been installed at $(which endlessh) and enabled on port: $PORT
 Version:"
-endlessh -v
-systemctl status endlessh
+endlessh -V
